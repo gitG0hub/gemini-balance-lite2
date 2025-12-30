@@ -24,8 +24,8 @@ export async function handleRequest(request) {
   let headers = new Headers();
 
   try {
-    if (pathname.startsWith("/openrouter/v1/")) {
-      targetUrl = `https://openrouter.ai/api${pathname.substring(11)}${search}`;
+    if (pathname.startsWith("/v1/")) {
+      targetUrl = `https://openrouter.ai/api${pathname}${search}`;
       let openRouterApiKey = null;
 
       for (const [key, value] of request.headers.entries()) {
