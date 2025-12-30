@@ -24,72 +24,54 @@ export async function handleRequest(request) {
   let headers = new Headers();
 
   try {
-    if (pathname.startsWith("/v1/")) {
-      targetUrl = `https://openrouter.ai/api${pathname}${search}`;
-      let openRouterApiKey = null;
+    targetUrl = `https://openrouter.ai/api${pathname}${search}`;
+    let openRouterApiKey = null;
 
-      for (const [key, value] of request.headers.entries()) {
-        if (
-          key.trim().toLowerCase() === "x-goog-api-key" ||
-          key.trim().toLowerCase() === "authorization"
-        ) {
-          const apiKeys = value
-            .replace("Bearer ", "") // Remove Bearer prefix if present
-            .split(",")
-            .map((k) => k.trim())
-            .filter((k) => k);
-          if (apiKeys.length > 0) {
-            openRouterApiKey =
-              apiKeys[Math.floor(Math.random() * apiKeys.length)];
-            console.log(`OpenRouter Selected API Key: ${openRouterApiKey}`);
-          }
-        } else if (key.trim().toLowerCase() === "content-type") {
-          headers.set(key, value);
-        } else {
-          // Copy other headers except host, referer, etc. which are handled by fetch
-          // and content-length which might change
-          const disallowedHeaders = ["host", "referer", "content-length"];
-          if (!disallowedHeaders.includes(key.trim().toLowerCase())) {
-            headers.set(key, value);
-          }
+    for (const [key, value] of request.headers.entries()) {
+      if (
+        key.trim().toLowerCase() === "x-goog-api-key" ||
+        key.trim().toLowerCase() === "authorization"
+      ) {
+        const apiKeys = value
+          .replace("Bearer ", "") // Remove Bearer prefix if present
+          .split(",")
+          .map((k) => k.trim())
+          .filter((k) => k);
+        if (apiKeys.length > 0) {
+          openRouterApiKey =
+            apiKeys[Math.floor(Math.random() * apiKeys.length)];
+          console.log(`OpenRouter Selected API Key: ${openRouterApiKey}`);
         }
-      }
-
-      if (openRouterApiKey) {
-        headers.set("Authorization", `Bearer ${openRouterApiKey}`);
+      } else if (key.trim().toLowerCase() === "content-type") {
+        headers.set(key, value);
       } else {
-        console.warn(
-          "No OpenRouter API key found in x-goog-api-key or Authorization header.",
-        );
-        return new Response("Unauthorized: OpenRouter API key missing.", {
-          status: 401,
-        });
-      }
-      headers.set("HTTP-Referer", url.hostname); // Optional, for OpenRouter analytics
-      headers.set("X-Title", "Gemini Balance Lite"); // Optional, for OpenRouter analytics
-
-      console.log("Request Sending to OpenRouter");
-    } else {
-      // Original Gemini Proxy Logic
-      targetUrl = `https://generativelanguage.googleapis.com${pathname}${search}`;
-      for (const [key, value] of request.headers.entries()) {
-        if (key.trim().toLowerCase() === "x-goog-api-key") {
-          const apiKeys = value
-            .split(",")
-            .map((k) => k.trim())
-            .filter((k) => k);
-          if (apiKeys.length > 0) {
-            const selectedKey =
-              apiKeys[Math.floor(Math.random() * apiKeys.length)];
-            console.log(`Gemini Selected API Key: ${selectedKey}`);
-            headers.set("x-goog-api-key", selectedKey);
-          }
-        } else if (key.trim().toLowerCase() === "content-type") {
+        // Copy other headers except host, referer, etc. which are handled by fetch
+        // and content-length which might change
+        const disallowedHeaders = ["host", "referer", "content-length"];
+        if (!disallowedHeaders.includes(key.trim().toLowerCase())) {
           headers.set(key, value);
         }
       }
-      console.log("Request Sending to Gemini");
     }
+
+    if (openRouterApiKey) {
+      headers.set("Authorization", `Bearer ${openRouterApiKey}`);
+    } else {
+      console.warn(
+        "No OpenRouter API key found in x-goog-api-key or Authorization header.",
+      );
+      return new Response("Unauthorized: OpenRouter API key missing.", {
+        status: 401,
+      });
+    }
+    if (!headers.has("HTTP-Referer")) {
+      headers.set("HTTP-Referer", url.hostname); // Optional, for OpenRouter analytics
+    }
+    if (!headers.has("X-Title")) {
+      headers.set("X-Title", "Gemini Balance Lite"); // Optional, for OpenRouter analytics
+    }
+
+    console.log("Request Sending to OpenRouter");
 
     console.log("targetUrl:" + targetUrl);
     console.log(headers);
@@ -100,19 +82,11 @@ export async function handleRequest(request) {
       body: request.body,
     });
 
-    console.log(
-      "Call " +
-        (pathname.startsWith("/openrouter/v1/") ? "OpenRouter" : "Gemini") +
-        " Success",
-    );
+    console.log("Call OpenRouter Success");
 
     const responseHeaders = new Headers(response.headers);
 
-    console.log(
-      "Header from " +
-        (pathname.startsWith("/openrouter/v1/") ? "OpenRouter" : "Gemini") +
-        ":",
-    );
+    console.log("Header from OpenRouter:");
     console.log(responseHeaders);
 
     responseHeaders.delete("transfer-encoding");
